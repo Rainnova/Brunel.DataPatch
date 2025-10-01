@@ -4,7 +4,20 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        Patch_250930();
+        Patch_251001();
+    end;
+
+    local procedure Patch_251001()
+    var
+        ALE: Record "Assignment Ledger Entry";
+    begin
+        ALE.SetCurrentKey("Document No.");
+        ALE.SetRange("Document No.", 'OPEN_ASGN_AUG25');
+        ALE.FindSet();
+        repeat
+            ALE."Auto-adjustment Blocked" := true;
+            ALE.Modify();
+        until ALE.Next() = 0;
     end;
 
     local procedure Patch_250930()
