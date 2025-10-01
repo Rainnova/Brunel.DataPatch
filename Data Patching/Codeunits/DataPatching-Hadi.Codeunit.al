@@ -12,7 +12,16 @@ codeunit 85999 "Data Patching (Hadi)"
         ALE: Record "Assignment Ledger Entry";
     begin
         ALE.SetCurrentKey("Document No.");
-        ALE.SetRange("Document No.", 'OPEN_ASGN_AUG25');
+        case CompanyName of
+            '023 BRU SG BISEA':
+                ALE.SetRange("Document No.", 'OPEN_ASGN_AUG25');  // BISEA
+            '100 BRU JP BEJKK':
+                ALE.SetRange("Document No.", 'OPEN_ASG_JUL25');  // BEJKK
+            '160 BRU TW Taiwan':
+                ALE.SetRange("Document No.", 'OPEN_ASGN_JUL25');  // BTW
+            else
+                Error('Company not allowed to run this patch.');
+        end;
         ALE.FindSet();
         repeat
             ALE."Auto-adjustment Blocked" := true;
