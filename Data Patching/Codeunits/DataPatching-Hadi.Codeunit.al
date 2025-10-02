@@ -4,7 +4,21 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        Patch_251001();
+        Patch_251002();
+    end;
+
+    local procedure Patch_251002()
+    var
+        ARR: Record "Assignment Rate Relation";
+    begin
+        ARR.SetRange(Level, 1);
+        ARR.FindSet();
+        repeat
+            if ARR."Parent Line No." = 0 then begin
+                ARR.Validate("Parent Line No.", 10000);
+                ARR.Modify(true);
+            end;
+        until ARR.Next() = 0;
     end;
 
     local procedure Patch_251001()
@@ -12,7 +26,16 @@ codeunit 85999 "Data Patching (Hadi)"
         ALE: Record "Assignment Ledger Entry";
     begin
         ALE.SetCurrentKey("Document No.");
-        ALE.SetRange("Document No.", 'OPEN_ASGN_AUG25');
+        case CompanyName of
+            '023 BRU SG BISEA':
+                ALE.SetRange("Document No.", 'OPEN_ASGN_AUG25');  // BISEA
+            '100 BRU JP BEJKK':
+                ALE.SetRange("Document No.", 'OPEN_ASG_JUL25');  // BEJKK
+            '160 BRU TW Taiwan':
+                ALE.SetRange("Document No.", 'OPEN_ASGN_JUL25');  // BTW
+            else
+                Error('Company not allowed to run this patch.');
+        end;
         ALE.FindSet();
         repeat
             ALE."Auto-adjustment Blocked" := true;

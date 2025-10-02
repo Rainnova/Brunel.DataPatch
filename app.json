@@ -2,7 +2,7 @@
   "id": "caffce08-3e5d-4b57-923d-7731b3ebd6ae",
   "name": "Brunel Data Patching",
   "publisher": "Brunel International N.V.",
-  "version": "1.0.0.205",
+  "version": "1.0.0.207",
   "brief": "Brunel extension for data patching",
   "description": "Brunel extension for data patching",
   "privacyStatement": "",
@@ -15,19 +15,19 @@
       "id": "28c01ec4-4c2e-47a8-b16c-93f71a7bac8e", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Work.4s", 
-      "version": "1.0.0.205"
+      "version": "1.0.0.207"
     }, 
     {
       "id": "bbd11d2a-815e-4b4d-9e86-0af252f130a1", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Base", 
-      "version": "1.0.0.205"
+      "version": "1.0.0.207"
     }, 
     {
       "id": "d1537d5c-e0f1-4b30-9cbf-69ae9f5d2e54", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Asia", 
-      "version": "1.0.0.205"
+      "version": "1.0.0.207"
     }
   ],
   "screenshots": [],
