@@ -4,7 +4,21 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        Patch_251001();
+        Patch_251002();
+    end;
+
+    local procedure Patch_251002()
+    var
+        ARR: Record "Assignment Rate Relation";
+    begin
+        ARR.SetRange(Level, 1);
+        ARR.FindSet();
+        repeat
+            if ARR."Parent Line No." = 0 then begin
+                ARR.Validate("Parent Line No.", 10000);
+                ARR.Modify(true);
+            end;
+        until ARR.Next() = 0;
     end;
 
     local procedure Patch_251001()
