@@ -4,7 +4,7 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        Patch_251002();
+        Patch_250930();
     end;
 
     local procedure Patch_251002()
@@ -47,7 +47,14 @@ codeunit 85999 "Data Patching (Hadi)"
     var
         SalesInvLine: Record "Sales Invoice Line";
     begin
-        SalesInvLine.Get('BVC-SIP-2509-0001', 80000);
+        // SalesInvLine.Get('BVC-SIP-2509-0001', 80000);
+
+        SalesInvLine.Get('BIS-SIP-2509-0089', 90000);
+        SalesInvLine."Cost Excl. Disc." := SalesInvLine."Cost Excl. Disc. (LCY)";
+        SalesInvLine."Total Cost" := SalesInvLine."Total Cost (LCY)";
+        SalesInvLine.Modify();
+
+        SalesInvLine.Get('BIS-SIP-2509-0089', 110000);
         SalesInvLine."Cost Excl. Disc." := SalesInvLine."Cost Excl. Disc. (LCY)";
         SalesInvLine."Total Cost" := SalesInvLine."Total Cost (LCY)";
         SalesInvLine.Modify();
