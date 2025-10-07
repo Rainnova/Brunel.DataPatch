@@ -4,7 +4,40 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        Patch_250930();
+        Patch_251007();
+    end;
+
+    local procedure Patch_251007()
+    var
+        CostCurrency: Record Currency;
+        SalesInvLine: Record "Sales Invoice Line";
+        Progress: Codeunit "Progress Dialog Box";
+    begin
+        SalesInvLine.SetRange(Type, SalesInvLine.Type::"G/L Account");
+        SalesInvLine.SetFilter("No.", '<>%1', '');
+        SalesInvLine.SetFilter("Assignment No.", '<>%1', '');
+        SalesInvLine.SetFilter("Rate Code", '<>%1', '');
+        SalesInvLine.FindSet();
+
+        Progress.Open('Patching... \@1@@@@@ \Document No. #2########## \Line No. #3#####');
+        Progress.Initialize(1, SalesInvLine.Count);
+
+        repeat
+            Progress.Increase(1);
+            Progress.Update(2, SalesInvLine."Document No.");
+            Progress.Update(3, SalesInvLine."Line No.");
+
+            if SalesInvLine."Cost Excl. Disc." = 0 then begin
+                if SalesInvLine."Unit Cost" <> 0 then begin
+                    CostCurrency.Initialize(SalesInvLine."Cost Currency Code");
+                    SalesInvLine."Cost Excl. Disc." := CostCurrency.RoundAmount(SalesInvLine.Quantity * SalesInvLine."Unit Cost");
+                    SalesInvLine."Total Cost" := SalesInvLine."Cost Excl. Disc." - SalesInvLine."Cost Discount";
+                    SalesInvLine.Modify();
+                end;
+            end;
+        until SalesInvLine.Next() = 0;
+
+        Progress.Close(1);
     end;
 
     local procedure Patch_251002()
