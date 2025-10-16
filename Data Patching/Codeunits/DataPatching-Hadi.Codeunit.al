@@ -33,13 +33,26 @@ codeunit 85999 "Data Patching (Hadi)"
             Progress.Update(2, SalesInvLine."Document No.");
             Progress.Update(3, Format(SalesInvLine."Line No."));
 
-            if SalesInvLine."Cost Excl. Disc." = 0 then begin
-                if SalesInvLine."Unit Cost" <> 0 then begin
-                    CostCurrency.Initialize(SalesInvLine."Cost Currency Code");
-                    SalesInvLine."Cost Excl. Disc." := CostCurrency.RoundAmount(SalesInvLine.Quantity * SalesInvLine."Unit Cost");
-                    SalesInvLine."Total Cost" := SalesInvLine."Cost Excl. Disc." - SalesInvLine."Cost Discount";
-                    SalesInvLine.Modify();
-                end;
+            if SalesInvLine."Cost Quantity" = 0 then begin
+                SalesInvLine."Cost Unit of Measure Code" := '';
+                SalesInvLine."Cost/Price UOM Conv. Factor" := 0;
+                SalesInvLine."Cost Currency Code" := '';
+                SalesInvLine."Cost Currency Factor" := 0;
+                SalesInvLine."Cost/Price Currency Factor" := 0;
+                SalesInvLine."Unit Cost" := 0;
+                SalesInvLine."Cost Excl. Disc." := 0;
+                SalesInvLine."Cost Discount" := 0;
+                SalesInvLine."Total Cost" := 0;
+                SalesInvLine."Unit Cost (LCY)" := 0;
+                SalesInvLine."Cost Excl. Disc. (LCY)" := 0;
+                SalesInvLine."Cost Discount (LCY)" := 0;
+                SalesInvLine."Total Cost (LCY)" := 0;
+                SalesInvLine.Modify();
+            end else if (SalesInvLine."Cost Excl. Disc." = 0) and (SalesInvLine."Unit Cost" <> 0) then begin
+                CostCurrency.Initialize(SalesInvLine."Cost Currency Code");
+                SalesInvLine."Cost Excl. Disc." := CostCurrency.RoundAmount(SalesInvLine.Quantity * SalesInvLine."Unit Cost");
+                SalesInvLine."Total Cost" := SalesInvLine."Cost Excl. Disc." - SalesInvLine."Cost Discount";
+                SalesInvLine.Modify();
             end;
         until SalesInvLine.Next() = 0;
         Progress.Complete(1);
