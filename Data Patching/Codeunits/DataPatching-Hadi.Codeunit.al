@@ -4,7 +4,6 @@ codeunit 85999 "Data Patching (Hadi)"
 
     trigger OnRun()
     begin
-        // Test
         Clear(Progress);
 
         Patch_251007();
