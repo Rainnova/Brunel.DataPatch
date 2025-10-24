@@ -1,6 +1,7 @@
 codeunit 85999 "Data Patching (Hadi)"
 {
-    Permissions = tabledata "Sales Invoice Line" = rm;
+    Permissions = tabledata "Sales Invoice Line" = rm,
+                  tabledata "Purch. Inv. Line" = rm;
 
     trigger OnRun()
     begin
@@ -18,9 +19,14 @@ codeunit 85999 "Data Patching (Hadi)"
     local procedure Patch_251007()
     var
         CostCurrency: Record Currency;
+        PriceCurrency: Record Currency;
         SalesInvLine: Record "Sales Invoice Line";
+        PurchInvLine: Record "Purch. Inv. Line";
     begin
-        Progress.Open('Patching... \@1@@@@@ \\Document No. #2########## \Line No. #3#####');
+        Progress.Open(
+            'Patching... ' +
+            '\@1@@@@@ \\Sales Invoice No. #2########## \Sales Invoice Line No. #3##### \' +
+            '\@4@@@@@ \\Purch. Invoice No. #5########## \Purch. Invoice Line No. #6##### \');
 
         SalesInvLine.SetRange(Type, SalesInvLine.Type::"G/L Account");
         SalesInvLine.SetFilter("No.", '<>%1', '');
@@ -50,12 +56,49 @@ codeunit 85999 "Data Patching (Hadi)"
                 SalesInvLine.Modify();
             end else if (SalesInvLine."Cost Excl. Disc." = 0) and (SalesInvLine."Unit Cost" <> 0) then begin
                 CostCurrency.Initialize(SalesInvLine."Cost Currency Code");
-                SalesInvLine."Cost Excl. Disc." := CostCurrency.RoundAmount(SalesInvLine.Quantity * SalesInvLine."Unit Cost");
+                SalesInvLine."Cost Excl. Disc." := CostCurrency.RoundAmount(SalesInvLine."Cost Quantity" * SalesInvLine."Unit Cost");
                 SalesInvLine."Total Cost" := SalesInvLine."Cost Excl. Disc." - SalesInvLine."Cost Discount";
                 SalesInvLine.Modify();
             end;
         until SalesInvLine.Next() = 0;
+
         Progress.Complete(1);
+
+        PurchInvLine.SetRange(Type, PurchInvLine.Type::"G/L Account");
+        PurchInvLine.SetFilter("No.", '<>%1', '');
+        PurchInvLine.SetFilter("Assignment No.", '<>%1', '');
+        PurchInvLine.SetFilter("Rate Code", '<>%1', '');
+        PurchInvLine.FindSet();
+        Progress.Initialize(4, PurchInvLine.Count);
+        repeat
+            Progress.Increase(4);
+            Progress.Update(5, PurchInvLine."Document No.");
+            Progress.Update(6, Format(PurchInvLine."Line No."));
+
+            if PurchInvLine."Price Quantity" = 0 then begin
+                PurchInvLine."Price Unit of Measure Code" := '';
+                PurchInvLine."Cost/Price UOM Conv. Factor" := 0;
+                PurchInvLine."Price Currency Code" := '';
+                PurchInvLine."Price Currency Factor" := 0;
+                PurchInvLine."Cost/Price Currency Factor" := 0;
+                PurchInvLine."Unit Price" := 0;
+                PurchInvLine."Price Excl. Disc." := 0;
+                PurchInvLine."Price Discount" := 0;
+                PurchInvLine."Total Price" := 0;
+                PurchInvLine."Unit Price (LCY)" := 0;
+                PurchInvLine."Price Excl. Disc. (LCY)" := 0;
+                PurchInvLine."Price Discount (LCY)" := 0;
+                PurchInvLine."Total Price (LCY)" := 0;
+                PurchInvLine.Modify();
+            end else if (PurchInvLine."Price Excl. Disc." = 0) and (PurchInvLine."Unit Price" <> 0) then begin
+                PriceCurrency.Initialize(PurchInvLine."Price Currency Code");
+                PurchInvLine."Price Excl. Disc." := PriceCurrency.RoundAmount(PurchInvLine."Price Quantity" * PurchInvLine."Unit Price");
+                PurchInvLine."Total Price" := PurchInvLine."Price Excl. Disc." - PurchInvLine."Price Discount";
+                PurchInvLine.Modify();
+            end;
+        until PurchInvLine.Next() = 0;
+
+        Progress.Complete(4);
     end;
 
     local procedure Patch_251002()
