@@ -62,36 +62,6 @@
             "enableSqlInformationDebugger": true
         },
         {
-            "name": "Brunel Asia UAT",
-            "request": "launch",
-            "type": "al",
-            "environmentType": "Sandbox",
-            "environmentName": "Brunel_Asia_UAT",
-            "dependencyPublishingOption": "Default",
-            "schemaUpdateMode": "Synchronize",
-            "startupObjectId": 22,
-            "startupObjectType": "Page",
-            "breakOnError": "All",
-            "launchBrowser": true,
-            "enableLongRunningSqlStatements": true,
-            "enableSqlInformationDebugger": true
-        },
-        {
-            "name": "Brunel Asia UAT | ForceSync",
-            "request": "launch",
-            "type": "al",
-            "environmentType": "Sandbox",
-            "environmentName": "Brunel_Asia_UAT",
-            "dependencyPublishingOption": "Default",
-            "schemaUpdateMode": "ForceSync",
-            "startupObjectId": 22,
-            "startupObjectType": "Page",
-            "breakOnError": "All",
-            "launchBrowser": true,
-            "enableLongRunningSqlStatements": true,
-            "enableSqlInformationDebugger": true
-        },
-        {
             "name": "Brunel Asia UAT Debug",
             "request": "launch",
             "type": "al",
