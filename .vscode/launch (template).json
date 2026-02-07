@@ -120,6 +120,36 @@
             "launchBrowser": true,
             "enableLongRunningSqlStatements": true,
             "enableSqlInformationDebugger": true
+        }, 
+        {
+            "name": "Brunel Asia Live Debug 2",
+            "request": "launch",
+            "type": "al",
+            "environmentType": "Sandbox",
+            "environmentName": "Brunel_Asia_Live_Debug2",
+            "dependencyPublishingOption": "Default",
+            "schemaUpdateMode": "Synchronize",
+            "startupObjectId": 22,
+            "startupObjectType": "Page",
+            "breakOnError": "All",
+            "launchBrowser": true,
+            "enableLongRunningSqlStatements": true,
+            "enableSqlInformationDebugger": true
+        },
+        {
+            "name": "Brunel Asia Live Debug 2 | ForceSync",
+            "request": "launch",
+            "type": "al",
+            "environmentType": "Sandbox",
+            "environmentName": "Brunel_Asia_Live_Debug2",
+            "dependencyPublishingOption": "Default",
+            "schemaUpdateMode": "ForceSync",
+            "startupObjectId": 22,
+            "startupObjectType": "Page",
+            "breakOnError": "All",
+            "launchBrowser": true,
+            "enableLongRunningSqlStatements": true,
+            "enableSqlInformationDebugger": true
         }
     ]
 }

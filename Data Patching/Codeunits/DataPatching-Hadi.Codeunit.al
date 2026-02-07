@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_251007();
+        Patch_260207();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,36 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+
+    local procedure Patch_260207()
+    var
+        Company: Record Company;
+        AssignmentRate: Record "Assignment Rate";
+        AssignmentLedgStatus: Record "Assignment Ledger Entry Status";
+    begin
+        Company.SetFilter(Name, '%1|%2|%3', '142 BRU CN BEQ', '146 BRU CN BEN', '165 BRU CN BTJ');
+        Company.FindSet();
+        repeat
+            AssignmentRate.ChangeCompany(Company.Name);
+            AssignmentLedgStatus.ChangeCompany(Company.Name);
+
+            AssignmentRate.SetRange("Rate Code", '41900');
+            AssignmentRate.FindSet();
+            repeat
+                AssignmentRate.TestField("Rate Code", '41900');
+                AssignmentRate.Validate("Cost Accrual Noncancelable", true);
+                AssignmentRate.Modify();
+
+                AssignmentLedgStatus.SetRange("Rate Code", AssignmentRate."Rate Code");
+                if AssignmentLedgStatus.FindSet() then
+                    repeat
+                        AssignmentLedgStatus.TestField("Rate Code", '41900');
+                        AssignmentLedgStatus."Cost Accrual Noncancelable" := true;
+                        AssignmentLedgStatus.Modify();
+                    until AssignmentLedgStatus.Next() = 0;
+            until AssignmentRate.Next() = 0;
+        until Company.Next() = 0;
+    end;
 
     local procedure Patch_251007()
     var
