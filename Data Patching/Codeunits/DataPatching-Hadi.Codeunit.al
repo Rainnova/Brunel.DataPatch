@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_260207();
+        Patch_260213();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,14 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+
+    local procedure Patch_260213()
+    var
+        AssignmentCalendar: Record "Assignment Calendar";
+    begin
+        AssignmentCalendar.SetRange("Calendar Type", AssignmentCalendar."Calendar Type"::"Time Entries");
+        AssignmentCalendar.DeleteAll();
+    end;
 
     local procedure Patch_260207()
     var
