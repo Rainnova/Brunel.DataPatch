@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_260213();
+        Patch_260401();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,37 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+
+    local procedure Patch_260401()
+    var
+        Co: Record Company;
+        TSL: Record "Time Sheet Line (Work.4s)";
+        PTSL: Record "Posted Time Sheet Line";
+    begin
+        Co.FindSet();
+        repeat
+            TSL.ChangeCompany(Co.Name);
+            PTSL.ChangeCompany(Co.Name);
+
+            if TSL.FindSet() then
+                repeat
+                    if TSL."Time Calendar Code" = '' then begin
+                        TSL."Time Calendar Code" := TSL."Calendar Code";
+                        TSL."Time Period Starting Date" := TSL."Calendar Period Starting Date";
+                        TSL.Modify();
+                    end
+                until TSL.Next() = 0;
+
+            if PTSL.FindSet() then
+                repeat
+                    if PTSL."Time Calendar Code" = '' then begin
+                        PTSL."Time Calendar Code" := PTSL."Calendar Code";
+                        PTSL."Time Period Starting Date" := PTSL."Calendar Period Starting Date";
+                        PTSL.Modify();
+                    end
+                until PTSL.Next() = 0;
+        until Co.Next() = 0;
+    end;
 
     local procedure Patch_260213()
     var
