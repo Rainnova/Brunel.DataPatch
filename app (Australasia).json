@@ -40,7 +40,7 @@
   ],
   "resourceExposurePolicy": {
     "allowDebugging": true,
-    "allowDownloadingSource": false,
+    "allowDownloadingSource": true,
     "includeSourceInSymbolFile": true
   },
   "target": "Cloud",
