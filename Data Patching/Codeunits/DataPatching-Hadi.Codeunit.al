@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_260401();
+        Patch_260603();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,27 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+
+    local procedure Patch_260603()
+    var
+        TimeSheetHeader: Record "Time Sheet Header (Work.4s)";
+        TimeSheetLine: Record "Time Sheet Line (Work.4s)";
+        PostedTimeSheetHeader: Record "Posted Time Sheet Header";
+    begin
+        TimeSheetHeader.Get('BIS-TS-2605-0063');
+        TimeSheetHeader.Status := TimeSheetHeader.Status::"Pending Approval";
+        TimeSheetHeader.Modify();
+        TimeSheetLine.SetRange("Time Sheet No.", 'BIS-TS-2605-0063');
+        if TimeSheetLine.FindSet() then
+            repeat
+                TimeSheetLine.Status := TimeSheetLine.Status::"Pending Approval";
+                TimeSheetLine.Modify();
+            until TimeSheetLine.Next() = 0;
+
+        PostedTimeSheetHeader.Get('BIS-TS-2605-0063');
+        PostedTimeSheetHeader.AllowDeletion(true);
+        PostedTimeSheetHeader.Delete(true);
+    end;
 
     local procedure Patch_260401()
     var
