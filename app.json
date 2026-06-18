@@ -2,7 +2,7 @@
   "id": "caffce08-3e5d-4b57-923d-7731b3ebd6ae",
   "name": "Brunel Data Patching",
   "publisher": "Brunel International N.V.",
-  "version": "1.0.1.16",
+  "version": "1.0.1.17",
   "brief": "Brunel extension for data patching",
   "description": "Brunel extension for data patching",
   "privacyStatement": "",
@@ -15,24 +15,24 @@
       "id": "28c01ec4-4c2e-47a8-b16c-93f71a7bac8e", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Work.4s", 
-      "version": "2.26.6.5"
+      "version": "2.26.6.19"
     }, 
     {
       "id": "bbd11d2a-815e-4b4d-9e86-0af252f130a1", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Base", 
-      "version": "2.26.6.5"
+      "version": "2.26.6.19"
     }, 
     {
       "id": "d1537d5c-e0f1-4b30-9cbf-69ae9f5d2e54", 
       "publisher": "Brunel International N.V.", 
       "name": "Brunel Asia", 
-      "version": "2.26.6.5"
+      "version": "2.26.6.19"
     }
   ],
   "screenshots": [],
-  "platform": "26.0.0.0",
-  "application": "26.5.0.0",
+  "platform": "28.0.0.0",
+  "application": "28.0.0.0",
   "idRanges": [
     {
       "from": 85990, "to": 85999
@@ -44,7 +44,7 @@
     "includeSourceInSymbolFile": true
   },
   "target": "Cloud",
-  "runtime": "15.2",
+  "runtime": "17.0",
   "features": [
     "NoImplicitWith", 
     "NoPromotedActionProperties"

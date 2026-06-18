@@ -2,6 +2,21 @@
     "version": "1.0.0",
     "configurations": [
         {
+            "name": "Brunel Asia Dev",
+            "request": "launch",
+            "type": "al",
+            "environmentType": "Sandbox",
+            "environmentName": "Brunel_Asia_Dev",
+            "dependencyPublishingOption": "Default",
+            "schemaUpdateMode": "Synchronize",
+            "startupObjectId": 22,
+            "startupObjectType": "Page",
+            "breakOnError": "All",
+            "launchBrowser": true,
+            "enableLongRunningSqlStatements": true,
+            "enableSqlInformationDebugger": true
+        },
+        {
             "name": "Brunel Asia Live Debug",
             "request": "launch",
             "type": "al",
