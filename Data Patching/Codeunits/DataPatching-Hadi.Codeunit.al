@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_260603();
+        Patch_260618();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,31 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+
+    local procedure Patch_260618()
+    var
+        A: Record Assignment;
+        ALE: Record "Assignment Ledger Entry";
+        ALES: Record "Assignment Ledger Entry Status";
+    begin
+        ALE.FindSet();
+        repeat
+            if A.Get(ALE."Assignment No.") then begin
+                if A."Subcontractor Vendor No." = '' then
+                    ALE."Pay-to Vendor Type" := ALE."Pay-to Vendor Type"::Employee
+                else
+                    ALE."Pay-to Vendor Type" := ALE."Pay-to Vendor Type"::Subcontractor;
+                ALE.SuppressStatusUpdate();
+                ALE.Modify();
+
+                if ALES.FindRecords(ALE, false) then
+                    repeat
+                        ALES."Pay-to Vendor Type" := ALE."Pay-to Vendor Type";
+                        ALES.Modify();
+                    until ALES.Next() = 0;
+            end;
+        until ALE.Next() = 0;
+    end;
 
     local procedure Patch_260603()
     var
