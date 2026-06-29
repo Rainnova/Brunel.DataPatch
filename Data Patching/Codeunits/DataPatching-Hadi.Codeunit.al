@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        Patch_260618();
+        SetupPayrollProcessing();
 
         Progress.Close();
         Message('Patch is completed.');
@@ -15,6 +15,262 @@ codeunit 85999 "Data Patching (Hadi)"
 
     var
         Progress: Codeunit "Progress Dialog Box";
+        AL: Codeunit "AL Helper";
+        TextHelper: Codeunit "Text Helper";
+
+    #region --- Payroll-specific setup ---
+
+    procedure SetupPayrollProcessing()
+    var
+        SourceCodeSetup: Record "Source Code Setup";
+        PayrollSetup: Record "Payroll Setup (Work.4s)";
+    begin
+        SetupSourceCode(SourceCodeSetup.FieldNo(Payroll), 'PAYROLL', 'Payroll Processing');
+        SetupPayrollAssignmentJournal('SYSTEM', '', 'PAYROLL', 'Payroll Processing');
+        SetupPayrollGeneralJournal('PAYROLL', 'Payroll Processing', 'PAYROLL', 'General Payroll Processing');
+        SetupPayrollNoSeries(PayrollSetup.FieldNo("Payroll Set Nos."), 'T-PAYROLLSET', 'Payroll Set', true, false, true, 'PYS', "No. Series Reset Period"::Monthly, true, 4, '-');
+
+        SetupRecognitionGroup(
+            'PAYROLLBYEMP', 'Payroll Grouped by Employee by Assignment',
+            StrSubstNo('%1,%2,%3,%4', "Recognition Group Item"::Employee, "Recognition Group Item"::Assignment, "Recognition Group Item"::Period, "Recognition Group Item"::"Rate Group"));
+        SetupRecognitionGroup(
+            'PAYROLLBYASGR', 'Payroll Grouped by Assignment Group by Assignment',
+            StrSubstNo('%1,%2,%3,%4', "Recognition Group Item"::"Assignment Group", "Recognition Group Item"::Assignment, "Recognition Group Item"::Period, "Recognition Group Item"::"Rate Group"));
+        SetupRecognitionGroup(
+            'PAYROLLBYASG', 'Payroll Grouped by Assignment',
+            StrSubstNo('%1,%2,%3', "Recognition Group Item"::Assignment, "Recognition Group Item"::Period, "Recognition Group Item"::"Rate Group"));
+        SetupPayrollRecognitionGroups('PAYROLLBYEMP', 'PAYROLLBYEMP', 'PAYROLLBYASGR', 'PAYROLLBYASG');
+    end;
+
+    procedure SetupPayrollAssignmentJournal(JournalTemplateName: Code[20]; JournaTemplateDescription: Text; JournalBatchName: Code[20]; JournalBatchDescription: Text)
+    var
+        ManpowerSetup: Record "Manpower Setup";
+        AssignmentJnlTemplate: Record "Assignment Journal Template";
+        AssignmentJnlBatch: Record "Assignment Journal Batch";
+    begin
+        if (JournalTemplateName = '') or (JournalBatchName = '') then
+            exit;
+
+        AssignmentJnlTemplate := SetupAssignmentJnlTemplate(JournalTemplateName, JournaTemplateDescription);
+        AssignmentJnlBatch := SetupAssignmentJnlBatch(AssignmentJnlTemplate."Name", JournalBatchName, JournalBatchDescription);
+
+        ManpowerSetup.GetSetup();
+        ManpowerSetup.Validate("Payroll Asgmt. Jnl. Template", AssignmentJnlBatch."Journal Template Name");
+        ManpowerSetup.Validate("Payroll Asgmt. Jnl. Batch", AssignmentJnlBatch."Name");
+        ManpowerSetup.Modify(true);
+    end;
+
+    procedure SetupPayrollGeneralJournal(JournalTemplateName: Code[20]; JournaTemplateDescription: Text; JournalBatchName: Code[20]; JournalBatchDescription: Text)
+    var
+        GLSetup: Record "General Ledger Setup";
+        GenJnlTemplate: Record "Gen. Journal Template";
+        GenJnlBatch: Record "Gen. Journal Batch";
+    begin
+        if (JournalTemplateName = '') or (JournalBatchName = '') then
+            exit;
+
+        GenJnlTemplate := SetupGeneralJnlTemplate(JournalTemplateName, JournaTemplateDescription);
+        GenJnlBatch := SetupGeneralJnlBatch(GenJnlTemplate."Name", JournalBatchName, JournalBatchDescription);
+
+        GLSetup.GetSetup();
+        GLSetup.Validate("Payroll Journal Template Name", GenJnlBatch."Journal Template Name");
+        GLSetup.Validate("Payroll Journal Batch Name", GenJnlBatch."Name");
+        GLSetup.Modify(true);
+    end;
+
+    procedure SetupPayrollRecognitionGroups(RecognitionGroupingCode: Code[20]; EmployeeGroupingCode: Code[20]; AssignmentGroupGroupingCode: Code[20]; AssignmentGroupingCode: Code[20])
+    var
+        PayrollSetup: Record "Payroll Setup (Work.4s)";
+    begin
+        PayrollSetup.GetSetup();
+        PayrollSetup.Validate("Default Recognition Grouping", RecognitionGroupingCode);
+        PayrollSetup.Validate("Default Employee Grouping", EmployeeGroupingCode);
+        PayrollSetup.Validate("Default Asgmt. Group Grouping", AssignmentGroupGroupingCode);
+        PayrollSetup.Validate("Default Assignment Grouping", AssignmentGroupingCode);
+        PayrollSetup.Modify(true);
+    end;
+
+    procedure SetupPayrollNoSeries(SetupFieldNumber: Integer; SeriesCode: Code[20]; SeriesDescription: Text; DefaultNos: Boolean; ManualNos: Boolean; PrefixWithCoIntials: Boolean; Prefix: Code[10]; ResetPeriod: Enum "No. Series Reset Period"; IncludeResetPeriod: Boolean; NoOfDigits: Integer; Separator: Text[1])
+    var
+        NoSeries: Record "No. Series";
+        PayrollSetup: Record "Payroll Setup (Work.4s)";
+        PayrollSetupRef: RecordRef;
+        PayrollSetupField: FieldRef;
+    begin
+        if (SetupFieldNumber = 0) or (SeriesCode = '') then
+            exit;
+
+        PayrollSetup.GetSetup();
+        PayrollSetupRef.GetTable(PayrollSetup);
+        PayrollSetupField := PayrollSetupRef.Field(SetupFieldNumber);
+
+        NoSeries := SetupNoSeries(SeriesCode, SeriesDescription, DefaultNos, ManualNos, PrefixWithCoIntials, Prefix, ResetPeriod, IncludeResetPeriod, NoOfDigits, Separator);
+
+        PayrollSetupField.Validate(NoSeries."Code");
+        PayrollSetupRef.Modify(true);
+        PayrollSetupRef.SetTable(PayrollSetup);
+    end;
+
+    #endregion --- Payroll-specific setup ---
+
+    #region --- Generic setup ---
+
+    procedure SetupSourceCode(SetupFieldNumber: Integer; SourceCode: Code[20]; SourceDescription: Text)
+    var
+        SourceCodeRec: Record "Source Code";
+        SourceCodeSetup: Record "Source Code Setup";
+        SourceCodeSetupRef: RecordRef;
+        SourceCodeSetupField: FieldRef;
+    begin
+        if (SetupFieldNumber = 0) or (SourceCode = '') then
+            exit;
+
+        SourceCodeSetup.GetSetup();
+        SourceCodeSetupRef.GetTable(SourceCodeSetup);
+        SourceCodeSetupField := SourceCodeSetupRef.Field(SetupFieldNumber);
+
+        SourceCodeRec := SetupSourceCode(SourceCode, SourceDescription);
+
+        SourceCodeSetupField.Validate(SourceCodeRec."Code");
+        SourceCodeSetupRef.Modify(true);
+        SourceCodeSetupRef.SetTable(SourceCodeSetup);
+    end;
+
+    procedure SetupSourceCode(SourceCode: Code[20]; SourceDescription: Text) SourceCodeRec: Record "Source Code"
+    begin
+        if SourceCode = '' then
+            exit;
+
+        SourceCodeRec.Init();
+        SourceCodeRec.Validate("Code", SourceCode);
+        if not SourceCodeRec.Find() then
+            SourceCodeRec.Insert(true);
+        if SourceDescription <> '' then begin
+            SourceCodeRec.Validate(Description, SourceDescription);
+            SourceCodeRec.Modify(true);
+        end;
+    end;
+
+    procedure SetupAssignmentJnlTemplate(TemplateName: Code[20]; TemplateDescription: Text) AssignmentJnlTemplate: Record "Assignment Journal Template"
+    begin
+        if TemplateName = '' then
+            exit;
+
+        AssignmentJnlTemplate.Init();
+        AssignmentJnlTemplate.Validate("Name", TemplateName);
+        if not AssignmentJnlTemplate.Find() then
+            AssignmentJnlTemplate.Insert(true);
+        if TemplateDescription <> '' then begin
+            AssignmentJnlTemplate.Validate(Description, TemplateDescription);
+            AssignmentJnlTemplate.Modify(true);
+        end;
+    end;
+
+    procedure SetupAssignmentJnlBatch(TemplateName: Code[20]; BatchName: Code[20]; BatchDescription: Text) AssignmentJnlBatch: Record "Assignment Journal Batch"
+    begin
+        if (TemplateName = '') or (BatchName = '') then
+            exit;
+
+        AssignmentJnlBatch.Init();
+        AssignmentJnlBatch.Validate("Journal Template Name", TemplateName);
+        AssignmentJnlBatch.Validate("Name", BatchName);
+        if not AssignmentJnlBatch.Find() then
+            AssignmentJnlBatch.Insert(true);
+        if BatchDescription <> '' then begin
+            AssignmentJnlBatch.Validate(Description, BatchDescription);
+            AssignmentJnlBatch.Modify(true);
+        end;
+    end;
+
+    procedure SetupGeneralJnlTemplate(TemplateName: Code[20]; TemplateDescription: Text) GeneralJnlTemplate: Record "Gen. Journal Template"
+    begin
+        if TemplateName = '' then
+            exit;
+
+        GeneralJnlTemplate.Init();
+        GeneralJnlTemplate.Validate("Name", TemplateName);
+        if not GeneralJnlTemplate.Find() then
+            GeneralJnlTemplate.Insert(true);
+        if TemplateDescription <> '' then begin
+            GeneralJnlTemplate.Validate(Description, TemplateDescription);
+            GeneralJnlTemplate.Modify(true);
+        end;
+    end;
+
+    procedure SetupGeneralJnlBatch(TemplateName: Code[20]; BatchName: Code[20]; BatchDescription: Text) GeneralJnlBatch: Record "Gen. Journal Batch"
+    begin
+        if (TemplateName = '') or (BatchName = '') then
+            exit;
+
+        GeneralJnlBatch.Init();
+        GeneralJnlBatch.Validate("Journal Template Name", TemplateName);
+        GeneralJnlBatch.Validate("Name", BatchName);
+        if not GeneralJnlBatch.Find() then
+            GeneralJnlBatch.Insert(true);
+        if BatchDescription <> '' then begin
+            GeneralJnlBatch.Validate(Description, BatchDescription);
+            GeneralJnlBatch.Modify(true);
+        end;
+    end;
+
+    procedure SetupRecognitionGroup(GroupCode: Code[20]; GroupName: Text; GroupItemOrdinalsInCSV: Text) Group: Record "Asgmt. Recognition Group"
+    var
+        GroupItem: Record "Asgmt. Recognition Group Item";
+        LineNo: Integer;
+        GroupItemOrdinalList: List of [Integer];
+        GroupItemOrdinal: Integer;
+    begin
+        if (GroupCode = '') or (GroupItemOrdinalsInCSV = '') then
+            exit;
+
+        Group.Init();
+        Group.Validate("Code", GroupCode);
+        if not Group.Find() then
+            Group.Insert(true);
+        if GroupName <> '' then begin
+            Group.Validate("Name", GroupName);
+            Group.Modify(true);
+        end;
+
+        GroupItem.SetRange("Group Code", Group."Code"); 
+        GroupItem.DeleteAll(true); 
+
+        TextHelper.Deserialize(GroupItemOrdinalsInCSV, GroupItemOrdinalList);
+        foreach GroupItemOrdinal in GroupItemOrdinalList do begin
+            GroupItem.Init();
+            GroupItem.Validate("Group Code", Group."Code");
+            GroupItem.Validate("Line No.", AL.Plus(LineNo, 10000));
+            GroupItem.Validate("Group Item", GroupItemOrdinal);
+            GroupItem.Insert(true);
+        end;
+    end;
+
+    procedure SetupNoSeries(SeriesCode: Code[20]; SeriesDescription: Text; DefaultNos: Boolean; ManualNos: Boolean; PrefixWithCoIntials: Boolean; Prefix: Code[10]; ResetPeriod: Enum "No. Series Reset Period"; IncludeResetPeriod: Boolean; NoOfDigits: Integer; Separator: Text[1]) NoSeries: Record "No. Series"
+    begin
+        if SeriesCode = '' then
+            exit;
+
+        NoSeries.Init();
+        NoSeries.Validate("Code", SeriesCode);
+        if not NoSeries.Find() then
+            NoSeries.Insert(true);
+
+        if SeriesDescription <> '' then
+            NoSeries.Validate(Description, SeriesDescription);
+        NoSeries.Validate("Default Nos.", DefaultNos);
+        NoSeries.Validate("Manual Nos.", ManualNos);
+        NoSeries.Validate("Prefix with Company Initials", PrefixWithCoIntials);
+        NoSeries.Validate(Prefix, Prefix);
+        NoSeries.Validate("Reset Period", ResetPeriod);
+        NoSeries.Validate("Include Reset Period", IncludeResetPeriod);
+        NoSeries.Validate("No. of Digits", NoOfDigits);
+        NoSeries.Validate("Element Separator", Separator);
+        NoSeries.Modify(true);
+
+        NoSeries.CreateLines();
+    end;
+
+    #endregion --- Generic setup ---
 
     local procedure Patch_260618()
     var
