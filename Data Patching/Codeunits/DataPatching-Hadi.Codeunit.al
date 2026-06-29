@@ -7,7 +7,7 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        SetupPayrollProcessing();
+        SetupPayrollProcessing(true);
 
         Progress.Close();
         Message('Patch is completed.');
@@ -20,7 +20,7 @@ codeunit 85999 "Data Patching (Hadi)"
 
     #region --- Payroll-specific setup ---
 
-    procedure SetupPayrollProcessing()
+    procedure SetupPayrollProcessing(Enable: Boolean)
     var
         SourceCodeSetup: Record "Source Code Setup";
         PayrollSetup: Record "Payroll Setup (Work.4s)";
@@ -40,6 +40,10 @@ codeunit 85999 "Data Patching (Hadi)"
             'PAYROLLBYASG', 'Payroll Grouped by Assignment',
             StrSubstNo('%1,%2,%3', "Recognition Group Item"::Assignment, "Recognition Group Item"::Period, "Recognition Group Item"::"Rate Group"));
         SetupPayrollRecognitionGroups('PAYROLLBYEMP', 'PAYROLLBYEMP', 'PAYROLLBYASGR', 'PAYROLLBYASG');
+
+        PayrollSetup.GetSetup();
+        PayrollSetup.Validate("Enable Payroll Processing", Enable);
+        PayrollSetup.Modify(true);
     end;
 
     procedure SetupPayrollAssignmentJournal(JournalTemplateName: Code[20]; JournaTemplateDescription: Text; JournalBatchName: Code[20]; JournalBatchDescription: Text)
@@ -213,14 +217,15 @@ codeunit 85999 "Data Patching (Hadi)"
         end;
     end;
 
-    procedure SetupRecognitionGroup(GroupCode: Code[20]; GroupName: Text; GroupItemOrdinalsInCSV: Text) Group: Record "Asgmt. Recognition Group"
+    procedure SetupRecognitionGroup(GroupCode: Code[20]; GroupName: Text; GroupItemsInCSV: Text) Group: Record "Asgmt. Recognition Group"
     var
-        GroupItem: Record "Asgmt. Recognition Group Item";
+        RecogGroupItem: Record "Asgmt. Recognition Group Item";
         LineNo: Integer;
-        GroupItemOrdinalList: List of [Integer];
-        GroupItemOrdinal: Integer;
+        GroupItemList: List of [Text];
+        GroupItemName: Text;
+        GroupItem: Enum "Recognition Group Item";
     begin
-        if (GroupCode = '') or (GroupItemOrdinalsInCSV = '') then
+        if (GroupCode = '') or (GroupItemsInCSV = '') then
             exit;
 
         Group.Init();
@@ -232,20 +237,22 @@ codeunit 85999 "Data Patching (Hadi)"
             Group.Modify(true);
         end;
 
-        GroupItem.SetRange("Group Code", Group."Code"); 
-        GroupItem.DeleteAll(true); 
+        RecogGroupItem.SetRange("Group Code", Group."Code");
+        RecogGroupItem.DeleteAll(true);
 
-        TextHelper.Deserialize(GroupItemOrdinalsInCSV, GroupItemOrdinalList);
-        foreach GroupItemOrdinal in GroupItemOrdinalList do begin
-            GroupItem.Init();
-            GroupItem.Validate("Group Code", Group."Code");
-            GroupItem.Validate("Line No.", AL.Plus(LineNo, 10000));
-            GroupItem.Validate("Group Item", GroupItemOrdinal);
-            GroupItem.Insert(true);
+        TextHelper.Deserialize(GroupItemsInCSV, GroupItemList);
+        foreach GroupItemName in GroupItemList do begin
+            RecogGroupItem.Init();
+            RecogGroupItem.Validate("Group Code", Group."Code");
+            RecogGroupItem.Validate("Line No.", AL.Plus(LineNo, 10000));
+            RecogGroupItem.Validate("Group Item", GroupItem.Names.IndexOf(GroupItemName) - 1);
+            RecogGroupItem.Insert(true);
         end;
     end;
 
     procedure SetupNoSeries(SeriesCode: Code[20]; SeriesDescription: Text; DefaultNos: Boolean; ManualNos: Boolean; PrefixWithCoIntials: Boolean; Prefix: Code[10]; ResetPeriod: Enum "No. Series Reset Period"; IncludeResetPeriod: Boolean; NoOfDigits: Integer; Separator: Text[1]) NoSeries: Record "No. Series"
+    var
+        CreateNoSeriesLines: Report "Create No. Series Lines";
     begin
         if SeriesCode = '' then
             exit;
@@ -266,8 +273,7 @@ codeunit 85999 "Data Patching (Hadi)"
         NoSeries.Validate("No. of Digits", NoOfDigits);
         NoSeries.Validate("Element Separator", Separator);
         NoSeries.Modify(true);
-
-        NoSeries.CreateLines();
+        NoSeries.AutoCreateLines();
     end;
 
     #endregion --- Generic setup ---
