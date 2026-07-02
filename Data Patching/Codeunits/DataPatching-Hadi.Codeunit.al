@@ -284,9 +284,26 @@ codeunit 85999 "Data Patching (Hadi)"
         A: Record Assignment;
         ALE: Record "Assignment Ledger Entry";
         ALES: Record "Assignment Ledger Entry Status";
+        Input: Page "Request Input";
+        Progress: Codeunit "Progress Dialog Box";
+        DateFilter: Text;
     begin
+        Input.SetParameter('Enter Date Filter');
+        Input.RunModal();
+        Input.GetValue(DateFilter);
+
+        if DateFilter <> '' then begin
+            ALE.SetCurrentKey("Entry Type", "Posting Date");
+            ALE.SetRange("Entry Type", ALE."Entry Type"::Origin);
+            ALE.SetFilter("Posting Date", DateFilter);
+        end;
         ALE.FindSet();
+
+        Progress.Open('Updating Assignment Ledger Entries... @1@@@@@', ALE.CountApprox);
+
         repeat
+            Progress.Increase(1);
+
             if A.Get(ALE."Assignment No.") then begin
                 if A."Subcontractor Vendor No." = '' then
                     ALE."Pay-to Vendor Type" := ALE."Pay-to Vendor Type"::Employee
@@ -302,6 +319,8 @@ codeunit 85999 "Data Patching (Hadi)"
                     until ALES.Next() = 0;
             end;
         until ALE.Next() = 0;
+
+        Progress.Close(1);
     end;
 
     local procedure Patch_260603()
