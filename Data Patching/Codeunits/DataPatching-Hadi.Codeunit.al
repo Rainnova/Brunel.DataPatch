@@ -7,7 +7,8 @@ codeunit 85999 "Data Patching (Hadi)"
     begin
         Clear(Progress);
 
-        SetupPayrollProcessing(true);
+        // SetupPayrollProcessing(true);
+        Patch_260618();
 
         Progress.Close();
         Message('Patch is completed.');
